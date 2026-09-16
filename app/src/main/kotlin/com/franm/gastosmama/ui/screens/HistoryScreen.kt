@@ -3,6 +3,7 @@ package com.franm.gastosmama.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
@@ -16,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.franm.gastosmama.data.Expense
@@ -91,18 +93,26 @@ fun HistoryScreen(
                     StrongRule()
                 }
                 items(deleted, key = { "deleted-" + it.id }) { e ->
+                    // Label over date: date + amount + "Recuperar" side by side already
+                    // fill a 412dp row at these sizes, leaving no room for the label.
                     Row(
                         Modifier.fillMaxWidth().background(Modernist.Surface).padding(horizontal = 20.dp, vertical = 12.dp).defaultMinSize(minHeight = 44.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(formatDayMonth(e.ts), fontFamily = Archivo, fontWeight = FontWeight.Normal, fontSize = 22.sp, color = Modernist.MutedInk)
-                        Text(e.label, fontFamily = Archivo, fontWeight = FontWeight.SemiBold, fontSize = 22.sp, color = Modernist.Ink, modifier = Modifier.weight(1f).padding(horizontal = 12.dp))
+                        Column(Modifier.weight(1f).padding(end = 12.dp)) {
+                            Text(
+                                e.label, fontFamily = Archivo, fontWeight = FontWeight.SemiBold, fontSize = 22.sp, color = Modernist.Ink,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(formatDayMonth(e.ts), fontFamily = Archivo, fontWeight = FontWeight.Normal, fontSize = 18.sp, color = Modernist.MutedInk)
+                        }
                         Text(formatCents(e.amountCents), fontFamily = Archivo, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = Modernist.Ink)
-                        Text(
-                            "Recuperar", fontFamily = Archivo, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Modernist.AccentRed,
-                            modifier = Modifier.padding(start = 16.dp).defaultMinSize(minHeight = 44.dp).clickable { onRestore(e) },
-                        )
+                        Box(
+                            Modifier.padding(start = 16.dp).defaultMinSize(minHeight = 44.dp).clickable { onRestore(e) },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("Recuperar", fontFamily = Archivo, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Modernist.AccentRed)
+                        }
                     }
                     StrongRule()
                 }
