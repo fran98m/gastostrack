@@ -39,6 +39,8 @@ data class UiState(
     val otherMode: Boolean = false,
     val otherText: String = "",
     val confirmOpen: Boolean = false,
+    /** Home-screen delete confirmation: the swiped-past-threshold row awaiting Sí/No. */
+    val deleteConfirmId: String? = null,
     val shareOpen: Boolean = false,
     val toast: String? = null,
     val openHistoryId: String? = null,
@@ -61,6 +63,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     val claimedByStatement: StateFlow<Map<String, List<Expense>>> =
         repo.claimedByStatement().stateIn(viewModelScope, stopSharing, emptyMap())
+
+    val deleted: StateFlow<List<Expense>> =
+        repo.deletedExpenses().stateIn(viewModelScope, stopSharing, emptyList())
 
     private val usage: StateFlow<Map<String, Int>> =
         repo.usageCounts().stateIn(viewModelScope, stopSharing, emptyMap())
@@ -146,6 +151,29 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteExpense(expense: Expense) = viewModelScope.launch {
         repo.deleteExpense(expense)
         toast("Borrado: ${expense.label} $ ${formatCents(expense.amountCents)}")
+    }
+
+    // ---- Home delete confirmation (swipe past threshold) ----
+
+    /** Swipe crossed the threshold: hold the row open and ask before deleting. */
+    fun requestDelete(expense: Expense) = _ui.update { it.copy(deleteConfirmId = expense.id) }
+
+    /** "Sí": soft-delete the row (it lands in Historial → Borrados). */
+    fun confirmDeleteYes() = viewModelScope.launch {
+        val id = _ui.value.deleteConfirmId ?: return@launch
+        val expense = unclaimed.value.find { it.id == id } ?: return@launch
+        _ui.update { it.copy(deleteConfirmId = null) }
+        repo.deleteExpense(expense)
+        toast("Borrado: ${expense.label} $ ${formatCents(expense.amountCents)}")
+    }
+
+    /** "No": snap the row back; nothing is deleted. */
+    fun confirmDeleteNo() = _ui.update { it.copy(deleteConfirmId = null) }
+
+    /** Recovery from Historial → Borrados: clear the soft-delete stamp. */
+    fun restoreExpense(expense: Expense) = viewModelScope.launch {
+        repo.restoreExpense(expense)
+        toast("Recuperado: ${expense.label} $ ${formatCents(expense.amountCents)}")
     }
 
     fun save() = viewModelScope.launch {

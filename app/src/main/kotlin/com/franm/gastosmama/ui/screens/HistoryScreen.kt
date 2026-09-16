@@ -33,8 +33,10 @@ fun HistoryScreen(
     statements: List<Statement>,
     claimedByStatement: Map<String, List<Expense>>,
     openId: String?,
+    deleted: List<Expense>,
     onBack: () -> Unit,
     onToggle: (String) -> Unit,
+    onRestore: (Expense) -> Unit,
 ) {
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.padding(top = 8.dp, start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -76,6 +78,31 @@ fun HistoryScreen(
                                 Text(formatCents(e.amountCents), fontFamily = Archivo, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = Modernist.Ink)
                             }
                         }
+                    }
+                    StrongRule()
+                }
+            }
+            if (deleted.isNotEmpty()) {
+                item(key = "deleted-header") {
+                    Text(
+                        "BORRADOS", fontFamily = Archivo, fontWeight = FontWeight.SemiBold, fontSize = 22.sp, color = Modernist.MutedInk,
+                        modifier = Modifier.padding(start = 20.dp, top = 28.dp, bottom = 8.dp),
+                    )
+                    StrongRule()
+                }
+                items(deleted, key = { "deleted-" + it.id }) { e ->
+                    Row(
+                        Modifier.fillMaxWidth().background(Modernist.Surface).padding(horizontal = 20.dp, vertical = 12.dp).defaultMinSize(minHeight = 44.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(formatDayMonth(e.ts), fontFamily = Archivo, fontWeight = FontWeight.Normal, fontSize = 22.sp, color = Modernist.MutedInk)
+                        Text(e.label, fontFamily = Archivo, fontWeight = FontWeight.SemiBold, fontSize = 22.sp, color = Modernist.Ink, modifier = Modifier.weight(1f).padding(horizontal = 12.dp))
+                        Text(formatCents(e.amountCents), fontFamily = Archivo, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, color = Modernist.Ink)
+                        Text(
+                            "Recuperar", fontFamily = Archivo, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = Modernist.AccentRed,
+                            modifier = Modifier.padding(start = 16.dp).defaultMinSize(minHeight = 44.dp).clickable { onRestore(e) },
+                        )
                     }
                     StrongRule()
                 }
