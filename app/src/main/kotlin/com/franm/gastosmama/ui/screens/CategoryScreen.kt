@@ -35,12 +35,15 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.franm.gastosmama.data.CategoryTile
+import com.franm.gastosmama.data.Expense
 import com.franm.gastosmama.ui.theme.Archivo
 import com.franm.gastosmama.ui.theme.BackButton
+import com.franm.gastosmama.ui.theme.ConfirmSheet
 import com.franm.gastosmama.ui.theme.HeavyRule
 import com.franm.gastosmama.ui.theme.Modernist
 import com.franm.gastosmama.ui.theme.StrongRule
@@ -57,6 +60,9 @@ fun CategoryScreen(
     suggestions: List<String>,
     saveLabel: String,
     saveEnabled: Boolean,
+    /** Edit flow: the original expense while the "Guardar cambio" sheet is up, else null. */
+    editConfirm: Expense?,
+    newLabel: String,
     onBack: () -> Unit,
     onBackFromOther: () -> Unit,
     onSelect: (String) -> Unit,
@@ -64,7 +70,10 @@ fun CategoryScreen(
     onOtherTextChange: (String) -> Unit,
     onPickSuggestion: (String) -> Unit,
     onSave: () -> Unit,
+    onConfirmEditYes: () -> Unit,
+    onConfirmEditNo: () -> Unit,
 ) {
+    Box(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.padding(top = 8.dp, start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             BackButton(if (otherMode) onBackFromOther else onBack)
@@ -148,6 +157,30 @@ fun CategoryScreen(
             Text(saveLabel, fontFamily = Archivo, fontWeight = FontWeight.ExtraBold, fontSize = 36.sp, color = Modernist.Ground)
             Text("✓", fontFamily = Archivo, fontWeight = FontWeight.ExtraBold, fontSize = 36.sp, color = Modernist.Ground)
         }
+    }
+    if (editConfirm != null) {
+        EditConfirmSheet(
+            before = "${editConfirm.label} $ ${formatCents(editConfirm.amountCents)}",
+            after = "$newLabel $ ${formatCents(amountCents)}",
+            onYes = onConfirmEditYes, onNo = onConfirmEditNo,
+        )
+    }
+    }
+}
+
+/** "Guardar cambio" confirmation: shows the row as it is and as it will be. */
+@Composable
+private fun EditConfirmSheet(before: String, after: String, onYes: () -> Unit, onNo: () -> Unit) {
+    ConfirmSheet(yesLabel = "Sí, guardar", noLabel = "No", onYes = onYes, onNo = onNo) {
+        Text("¿Corregir?", fontFamily = Archivo, fontWeight = FontWeight.SemiBold, fontSize = 24.sp, color = Modernist.MutedInk)
+        Text(
+            before, fontFamily = Archivo, fontWeight = FontWeight.SemiBold, fontSize = 28.sp, color = Modernist.MutedInk,
+            textDecoration = TextDecoration.LineThrough, modifier = Modifier.padding(top = 6.dp),
+        )
+        Text(
+            "→ $after", fontFamily = Archivo, fontWeight = FontWeight.ExtraBold, fontSize = 32.sp,
+            letterSpacing = (-0.56).sp, color = Modernist.Ink, modifier = Modifier.padding(bottom = 20.dp),
+        )
     }
 }
 

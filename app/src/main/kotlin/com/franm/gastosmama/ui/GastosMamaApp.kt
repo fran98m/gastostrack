@@ -73,6 +73,8 @@ fun GastosMamaApp(viewModel: AppViewModel = viewModel()) {
                         suggestions = otherSuggestions,
                         saveLabel = if (ui.editId != null) "Guardar cambio" else "Guardar",
                         saveEnabled = saveEnabled,
+                        editConfirm = if (ui.editConfirmOpen) viewModel.editingExpense() else null,
+                        newLabel = (if (ui.otherMode) ui.otherText else ui.selectedCategory).orEmpty().trim(),
                         onBack = viewModel::backToAmount,
                         onBackFromOther = viewModel::closeOther,
                         onSelect = viewModel::selectCategory,
@@ -80,6 +82,8 @@ fun GastosMamaApp(viewModel: AppViewModel = viewModel()) {
                         onOtherTextChange = viewModel::setOtherText,
                         onPickSuggestion = viewModel::setOtherText,
                         onSave = viewModel::save,
+                        onConfirmEditYes = viewModel::confirmEditYes,
+                        onConfirmEditNo = viewModel::confirmEditNo,
                     )
                 }
 

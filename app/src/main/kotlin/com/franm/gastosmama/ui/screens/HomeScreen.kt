@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import com.franm.gastosmama.data.Expense
 import com.franm.gastosmama.data.icons.iconForLabel
 import com.franm.gastosmama.ui.theme.Archivo
+import com.franm.gastosmama.ui.theme.ConfirmSheet
 import com.franm.gastosmama.ui.theme.HeavyRule
 import com.franm.gastosmama.ui.theme.Modernist
 import com.franm.gastosmama.ui.theme.StrongRule
@@ -172,38 +173,13 @@ fun HomeScreen(
  */
 @Composable
 private fun DeleteConfirmSheet(expense: Expense, onYes: () -> Unit, onNo: () -> Unit) {
-    Box(
-        Modifier.fillMaxSize().background(Modernist.Scrim).clickable(onClick = onNo),
-        contentAlignment = Alignment.BottomCenter,
-    ) {
-        Column(
-            Modifier.fillMaxWidth().background(Modernist.Ground)
-                .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {}
-                .padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 20.dp),
-        ) {
-            Text(
-                "¿Borrar ${expense.label} $ ${formatCents(expense.amountCents)}?",
-                fontFamily = Archivo, fontWeight = FontWeight.ExtraBold, fontSize = 32.sp,
-                letterSpacing = (-0.56).sp, color = Modernist.Ink,
-            )
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(
-                    Modifier.fillMaxWidth().defaultMinSize(minHeight = 76.dp).background(Modernist.AccentRed)
-                        .clickable(onClick = onYes).padding(horizontal = 20.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("Sí", fontFamily = Archivo, fontWeight = FontWeight.ExtraBold, fontSize = 28.sp, color = Modernist.Ground)
-                }
-                Row(
-                    Modifier.fillMaxWidth().defaultMinSize(minHeight = 76.dp)
-                        .border(2.dp, Modernist.StrongDivider)
-                        .clickable(onClick = onNo).padding(horizontal = 20.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("No", fontFamily = Archivo, fontWeight = FontWeight.ExtraBold, fontSize = 28.sp, color = Modernist.Ink)
-                }
-            }
-        }
+    ConfirmSheet(yesLabel = "Sí", noLabel = "No", onYes = onYes, onNo = onNo) {
+        Text(
+            "¿Borrar ${expense.label} $ ${formatCents(expense.amountCents)}?",
+            fontFamily = Archivo, fontWeight = FontWeight.ExtraBold, fontSize = 32.sp,
+            letterSpacing = (-0.56).sp, color = Modernist.Ink,
+            modifier = Modifier.padding(bottom = 20.dp),
+        )
     }
 }
 

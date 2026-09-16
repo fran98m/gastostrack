@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.franm.gastosmama.ui.theme.Archivo
 import com.franm.gastosmama.ui.theme.BackButton
+import com.franm.gastosmama.ui.theme.ConfirmSheet
 import com.franm.gastosmama.ui.theme.Modernist
 import com.franm.gastosmama.ui.theme.StrongRule
 import com.franm.gastosmama.util.amountTextToCents
@@ -108,41 +109,15 @@ fun AmountScreen(
         }
 
         if (confirmOpen) {
-            Box(
-                Modifier.fillMaxSize().background(Modernist.Scrim).clickable(onClick = onConfirmNo),
-                contentAlignment = Alignment.BottomCenter,
-            ) {
-                Column(
-                    Modifier.fillMaxWidth().background(Modernist.Ground)
-                        .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {}
-                        .padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 20.dp),
-                ) {
-                    Text(
-                        "Es más de $ ${thresholdCents / 100}", fontFamily = Archivo, fontWeight = FontWeight.SemiBold,
-                        fontSize = 24.sp, color = Modernist.MutedInk,
-                    )
-                    Text(
-                        "¿Son $ $display?", fontFamily = Archivo, fontWeight = FontWeight.ExtraBold, fontSize = 44.sp,
-                        letterSpacing = (-0.88).sp, color = Modernist.Ink, modifier = Modifier.padding(top = 6.dp, bottom = 20.dp),
-                    )
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(
-                            Modifier.fillMaxWidth().defaultMinSize(minHeight = 76.dp).background(Modernist.AccentRed)
-                                .clickable(onClick = onConfirmYes).padding(horizontal = 20.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text("Sí, es correcto", fontFamily = Archivo, fontWeight = FontWeight.ExtraBold, fontSize = 28.sp, color = Modernist.Ground)
-                        }
-                        Row(
-                            Modifier.fillMaxWidth().defaultMinSize(minHeight = 76.dp)
-                                .border(2.dp, Modernist.StrongDivider)
-                                .clickable(onClick = onConfirmNo).padding(horizontal = 20.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text("Corregir", fontFamily = Archivo, fontWeight = FontWeight.ExtraBold, fontSize = 28.sp, color = Modernist.Ink)
-                        }
-                    }
-                }
+            ConfirmSheet(yesLabel = "Sí, es correcto", noLabel = "Corregir", onYes = onConfirmYes, onNo = onConfirmNo) {
+                Text(
+                    "Es más de $ ${thresholdCents / 100}", fontFamily = Archivo, fontWeight = FontWeight.SemiBold,
+                    fontSize = 24.sp, color = Modernist.MutedInk,
+                )
+                Text(
+                    "¿Son $ $display?", fontFamily = Archivo, fontWeight = FontWeight.ExtraBold, fontSize = 44.sp,
+                    letterSpacing = (-0.88).sp, color = Modernist.Ink, modifier = Modifier.padding(top = 6.dp, bottom = 20.dp),
+                )
             }
         }
     }
