@@ -35,6 +35,9 @@ class ExpenseRepository(private val dao: AppDao) {
     fun expensesForStatement(statementId: String): Flow<List<Expense>> =
         dao.expensesForStatement(statementId)
 
+    /** Soft-deleted expenses for the Historial "Borrados" section. */
+    fun deletedExpenses(): Flow<List<Expense>> = dao.deletedExpenses()
+
     /** Claimed expenses grouped by statement id, for the expandable Historial rows. */
     fun claimedByStatement(): Flow<Map<String, List<Expense>>> =
         dao.claimedExpenses().map { all -> all.filter { it.statementId != null }.groupBy { it.statementId!! } }
@@ -62,7 +65,11 @@ class ExpenseRepository(private val dao: AppDao) {
         dao.updateExpense(expense.copy(label = label, amountCents = amountCents))
     }
 
-    suspend fun deleteExpense(expense: Expense) = dao.deleteExpense(expense)
+    /** Soft delete: stamp the row so it can be recovered from Historial. */
+    suspend fun deleteExpense(expense: Expense) = dao.softDeleteExpense(expense.id, System.currentTimeMillis())
+
+    /** Recovery: clear the stamp; the row reappears in its original list. */
+    suspend fun restoreExpense(expense: Expense) = dao.restoreExpense(expense.id)
 
     suspend fun sendStatement(id: String, expenses: List<Expense>, sentTs: Long) {
         val statement = Statement(

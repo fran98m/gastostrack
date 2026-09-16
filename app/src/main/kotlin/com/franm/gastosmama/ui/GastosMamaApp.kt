@@ -26,6 +26,7 @@ fun GastosMamaApp(viewModel: AppViewModel = viewModel()) {
     val unclaimed by viewModel.unclaimed.collectAsState()
     val statements by viewModel.statements.collectAsState()
     val claimedByStatement by viewModel.claimedByStatement.collectAsState()
+    val deleted by viewModel.deleted.collectAsState()
     val categoryTiles by viewModel.categoryTiles.collectAsState()
     val otherSuggestions by viewModel.otherSuggestions.collectAsState()
     val context = LocalContext.current
@@ -39,11 +40,14 @@ fun GastosMamaApp(viewModel: AppViewModel = viewModel()) {
             when (ui.screen) {
                 Screen.Home -> HomeScreen(
                     unclaimed = unclaimed,
+                    deleteConfirmId = ui.deleteConfirmId,
                     onGoHistory = viewModel::goHistory,
                     onGoAdd = viewModel::goAdd,
                     onGoStatement = viewModel::goStatement,
                     onEdit = viewModel::edit,
-                    onDelete = viewModel::deleteExpense,
+                    onRequestDelete = viewModel::requestDelete,
+                    onConfirmDeleteYes = viewModel::confirmDeleteYes,
+                    onConfirmDeleteNo = viewModel::confirmDeleteNo,
                 )
 
                 Screen.Amount -> AmountScreen(
@@ -69,6 +73,8 @@ fun GastosMamaApp(viewModel: AppViewModel = viewModel()) {
                         suggestions = otherSuggestions,
                         saveLabel = if (ui.editId != null) "Guardar cambio" else "Guardar",
                         saveEnabled = saveEnabled,
+                        editConfirm = if (ui.editConfirmOpen) viewModel.editingExpense() else null,
+                        newLabel = (if (ui.otherMode) ui.otherText else ui.selectedCategory).orEmpty().trim(),
                         onBack = viewModel::backToAmount,
                         onBackFromOther = viewModel::closeOther,
                         onSelect = viewModel::selectCategory,
@@ -76,6 +82,8 @@ fun GastosMamaApp(viewModel: AppViewModel = viewModel()) {
                         onOtherTextChange = viewModel::setOtherText,
                         onPickSuggestion = viewModel::setOtherText,
                         onSave = viewModel::save,
+                        onConfirmEditYes = viewModel::confirmEditYes,
+                        onConfirmEditNo = viewModel::confirmEditNo,
                     )
                 }
 
@@ -94,8 +102,10 @@ fun GastosMamaApp(viewModel: AppViewModel = viewModel()) {
                     statements = statements,
                     claimedByStatement = claimedByStatement,
                     openId = ui.openHistoryId,
+                    deleted = deleted,
                     onBack = viewModel::goHome,
                     onToggle = viewModel::toggleHistory,
+                    onRestore = viewModel::restoreExpense,
                 )
             }
             }

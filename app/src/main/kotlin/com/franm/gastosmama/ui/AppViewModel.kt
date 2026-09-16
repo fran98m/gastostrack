@@ -39,6 +39,10 @@ data class UiState(
     val otherMode: Boolean = false,
     val otherText: String = "",
     val confirmOpen: Boolean = false,
+    /** Home-screen delete confirmation: the swiped-past-threshold row awaiting Sí/No. */
+    val deleteConfirmId: String? = null,
+    /** Category-screen "Guardar cambio" confirmation (edit flow only). */
+    val editConfirmOpen: Boolean = false,
     val shareOpen: Boolean = false,
     val toast: String? = null,
     val openHistoryId: String? = null,
@@ -61,6 +65,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     val claimedByStatement: StateFlow<Map<String, List<Expense>>> =
         repo.claimedByStatement().stateIn(viewModelScope, stopSharing, emptyMap())
+
+    val deleted: StateFlow<List<Expense>> =
+        repo.deletedExpenses().stateIn(viewModelScope, stopSharing, emptyList())
 
     private val usage: StateFlow<Map<String, Int>> =
         repo.usageCounts().stateIn(viewModelScope, stopSharing, emptyMap())
@@ -148,13 +155,54 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         toast("Borrado: ${expense.label} $ ${formatCents(expense.amountCents)}")
     }
 
-    fun save() = viewModelScope.launch {
+    // ---- Home delete confirmation (swipe past threshold) ----
+
+    /** Swipe crossed the threshold: hold the row open and ask before deleting. */
+    fun requestDelete(expense: Expense) = _ui.update { it.copy(deleteConfirmId = expense.id) }
+
+    /** "Sí": soft-delete the row (it lands in Historial → Borrados). */
+    fun confirmDeleteYes() = viewModelScope.launch {
+        val id = _ui.value.deleteConfirmId ?: return@launch
+        val expense = unclaimed.value.find { it.id == id } ?: return@launch
+        _ui.update { it.copy(deleteConfirmId = null) }
+        repo.deleteExpense(expense)
+        toast("Borrado: ${expense.label} $ ${formatCents(expense.amountCents)}")
+    }
+
+    /** "No": snap the row back; nothing is deleted. */
+    fun confirmDeleteNo() = _ui.update { it.copy(deleteConfirmId = null) }
+
+    /** Recovery from Historial → Borrados: clear the soft-delete stamp. */
+    fun restoreExpense(expense: Expense) = viewModelScope.launch {
+        repo.restoreExpense(expense)
+        toast("Recuperado: ${expense.label} $ ${formatCents(expense.amountCents)}")
+    }
+
+    private fun pendingLabel(s: UiState): String? =
+        (if (s.otherMode) s.otherText else s.selectedCategory)?.trim()?.takeIf { it.isNotEmpty() }
+
+    /** The expense being edited, for the "Guardar cambio" confirmation (null when adding). */
+    fun editingExpense(): Expense? = _ui.value.editId?.let { id -> unclaimed.value.find { it.id == id } }
+
+    /** "Guardar": writes a new expense; "Guardar cambio": asks first, then [confirmEditYes] writes. */
+    fun save() {
         val s = _ui.value
-        val label = (if (s.otherMode) s.otherText else s.selectedCategory)?.trim()
-        if (label.isNullOrEmpty()) return@launch
+        if (pendingLabel(s) == null) return
+        if (s.editId != null) _ui.update { it.copy(editConfirmOpen = true) } else commitSave()
+    }
+
+    fun confirmEditYes() {
+        _ui.update { it.copy(editConfirmOpen = false) }
+        commitSave()
+    }
+
+    fun confirmEditNo() = _ui.update { it.copy(editConfirmOpen = false) }
+
+    private fun commitSave() = viewModelScope.launch {
+        val s = _ui.value
+        val label = pendingLabel(s) ?: return@launch
         val cents = amountCents()
-        val editId = s.editId
-        val existing = editId?.let { id -> unclaimed.value.find { it.id == id } }
+        val existing = editingExpense()
         if (existing != null) {
             repo.updateExpense(existing, label, cents)
             toast("Corregido: $label $ ${formatCents(cents)}")

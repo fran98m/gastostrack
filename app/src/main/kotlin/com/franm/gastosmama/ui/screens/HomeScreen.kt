@@ -2,9 +2,11 @@ package com.franm.gastosmama.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import com.franm.gastosmama.data.Expense
 import com.franm.gastosmama.data.icons.iconForLabel
 import com.franm.gastosmama.ui.theme.Archivo
+import com.franm.gastosmama.ui.theme.ConfirmSheet
 import com.franm.gastosmama.ui.theme.HeavyRule
 import com.franm.gastosmama.ui.theme.Modernist
 import com.franm.gastosmama.ui.theme.StrongRule
@@ -52,11 +55,14 @@ import com.franm.gastosmama.util.formatDayMonth
 @Composable
 fun HomeScreen(
     unclaimed: List<Expense>,
+    deleteConfirmId: String?,
     onGoHistory: () -> Unit,
     onGoAdd: () -> Unit,
     onGoStatement: () -> Unit,
     onEdit: (Expense) -> Unit,
-    onDelete: (Expense) -> Unit,
+    onRequestDelete: (Expense) -> Unit,
+    onConfirmDeleteYes: () -> Unit,
+    onConfirmDeleteNo: () -> Unit,
 ) {
     val sorted = remember(unclaimed) { unclaimed.sortedByDescending { it.ts } }
     val total = remember(unclaimed) { unclaimed.sumOf { it.amountCents } }
@@ -64,7 +70,9 @@ fun HomeScreen(
         val seen = mutableSetOf<String>()
         sorted.associate { e -> e.id to seen.add(dayKey(e.ts)) }
     }
+    val confirming = deleteConfirmId?.let { id -> sorted.find { it.id == id } }
 
+    Box(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize()) {
         Row(
             Modifier.fillMaxWidth().padding(top = 52.dp, bottom = 8.dp, start = 20.dp, end = 20.dp),
@@ -103,7 +111,7 @@ fun HomeScreen(
                             expense = expense,
                             showDay = firstOfDay[expense.id] == true,
                             onEdit = { onEdit(expense) },
-                            onDelete = { onDelete(expense) },
+                            onRequestDelete = { onRequestDelete(expense) },
                         )
                     }
                 }
@@ -152,12 +160,34 @@ fun HomeScreen(
             }
         }
     }
+    if (confirming != null) {
+        DeleteConfirmSheet(expense = confirming, onYes = onConfirmDeleteYes, onNo = onConfirmDeleteNo)
+    }
+    }
 }
+
+/**
+ * Swipe-past-threshold confirmation, same pattern as the Amount screen's
+ * confirm sheet: scrim + bottom card, "Sí" deletes, "No" (or scrim tap)
+ * snaps the row back.
+ */
+@Composable
+private fun DeleteConfirmSheet(expense: Expense, onYes: () -> Unit, onNo: () -> Unit) {
+    ConfirmSheet(yesLabel = "Sí", noLabel = "No", onYes = onYes, onNo = onNo) {
+        Text(
+            "¿Borrar ${expense.label} $ ${formatCents(expense.amountCents)}?",
+            fontFamily = Archivo, fontWeight = FontWeight.ExtraBold, fontSize = 32.sp,
+            letterSpacing = (-0.56).sp, color = Modernist.Ink,
+            modifier = Modifier.padding(bottom = 20.dp),
+        )
+    }
+}
+
 
 private const val DELETE_THRESHOLD_DP = -140f
 
 @Composable
-private fun ExpenseRow(expense: Expense, showDay: Boolean, onEdit: () -> Unit, onDelete: () -> Unit) {
+private fun ExpenseRow(expense: Expense, showDay: Boolean, onEdit: () -> Unit, onRequestDelete: () -> Unit) {
     val density = LocalDensity.current
     val thresholdPx = with(density) { DELETE_THRESHOLD_DP.dp.toPx() }
     val touchSlopPx = with(density) { 8.dp.toPx() }
@@ -191,7 +221,7 @@ private fun ExpenseRow(expense: Expense, showDay: Boolean, onEdit: () -> Unit, o
                             val event = awaitPointerEvent()
                             val change = event.changes.firstOrNull { it.id == down.id } ?: break
                             if (!change.pressed) {
-                                if (offsetX < thresholdPx) onDelete()
+                                if (offsetX < thresholdPx) { offsetX = 0f; onRequestDelete() }
                                 else if (!moved) onEdit()
                                 else offsetX = 0f
                                 break
